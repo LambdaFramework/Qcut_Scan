@@ -1,0 +1,95 @@
+#!/bin/sh -f
+
+echo "PWD:"
+pwd
+export VO_CMS_SW_DIR=/cvmfs/cms.cern.ch
+source $VO_CMS_SW_DIR/cmsset_default.sh
+echo "Step 1 : Setting the environment"
+
+export DIR=(`pwd`)
+export SCRAM_ARCH=slc6_amd64_gcc493
+export CMSSWRELEASE=CMSSW_7_6_0
+export LHEfile=${DIR}/LHE/INPUT1_M125_LO_MLM_13TeV.lhe
+export CODE_SRC=${DIR}/work #CURRENT DIRECTORY
+export ROOTFILE=${CODE_SRC}/Qcut_INPUT2/results #OUTPUT LOCATION
+export HADRONIZERTMPL=Hadronizer_TuneCUETP8M1_13TeV_MLM_5f_max2j_qCutXX_LHE_pythia8_cff.py-template
+export HADRONIZER=(`echo ${HADRONIZERTMPL} | awk -F "-" '{print $1}'`)
+export nevent=100
+
+echo "- - - - - PATH SETTING- - - - -"
+echo "SCRAM_ARCH is : " ${SCRAM_ARCH}
+echo "WorkDir is : " ${CODE_SRC}
+echo "Disk space on this batch machine:"
+#df -h
+
+##Create Qcut folder
+mkdir -p ${CODE_SRC}/Qcut_INPUT2
+cd ${CODE_SRC}/Qcut_INPUT2
+
+echo
+env > local.env
+env
+echo "copying job to WORKER AREA (LOCAL)"
+
+##Create python structure
+scramv1 project CMSSW ${CMSSWRELEASE}
+cd ${CMSSWRELEASE}/src
+mkdir -p Configuration/users/python
+
+#Copy hadronizer
+cp -a ${DIR}/${HADRONIZERTMPL} .
+sed s/XX_QCUT_XX/INPUT5/g ${HADRONIZERTMPL} > tmpl
+mv tmpl Configuration/users/python/${HADRONIZER}
+cat  Configuration/users/python/${HADRONIZER}
+rm ${HADRONIZERTMPL}
+
+#MKAE SURE CMSDRIVER SEE THE HADRONIZER
+eval `scramv1 runtime -sh`
+scramv1 build
+cd Configuration/users/python
+scramv1 build
+cd ${CMSSW_BASE}/src
+scramv1 build
+
+#copy nessecary files
+echo "copying LHE file"
+cp -a ${LHEfile} .
+cp ${DIR}/plotdjr.C .
+
+#cmsDriver.py
+echo "Running cmsDriver.py"
+cmsDriver.py Configuration/users/python/${HADRONIZER} \
+    -s GEN \
+    --conditions auto:mc \
+    --filein file:INPUT1_M125_LO_MLM_13TeV.lhe \
+    --fileout file:INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root \
+    -n ${nevent} \
+    --python_filename hadronizer.py \
+    --no_exec
+
+#cmsRun
+echo "cmsRun Hadronizer"
+cmsRun hadronizer.py >& run.log
+
+#Differential jet rate plots
+echo "Plotting Differential Jet Rate"
+root -l <<EOF
+.x plotdjr.C("INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root","DJR_PLOT_INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root","INPUT2")
+.q
+EOF
+
+#Copy results to safe
+echo "Copying files.."
+mkdir -p ${ROOTFILE}
+cp run.log ${ROOTFILE}/Log_INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.log
+cp INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root ${ROOTFILE}/
+cp DJR_PLOT_INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root ${ROOTFILE}/
+
+##PURGE
+cd ${CODE_SRC}/Qcut_INPUT2
+#rm -rf CMSSW*
+
+echo ""
+echo "Job end `date`"
+echo ""
+exit $?
