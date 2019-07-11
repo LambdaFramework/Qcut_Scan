@@ -14,7 +14,7 @@ export CODE_SRC=${DIR}/work #CURRENT DIRECTORY
 export ROOTFILE=${CODE_SRC}/Qcut_INPUT2/results #OUTPUT LOCATION
 export HADRONIZERTMPL=Hadronizer_TuneCUETP8M1_13TeV_MLM_5f_max2j_qCutXX_LHE_pythia8_cff.py-template
 export HADRONIZER=(`echo ${HADRONIZERTMPL} | awk -F "-" '{print $1}'`)
-export nevent=100
+export nevent=1000
 
 echo "- - - - - PATH SETTING- - - - -"
 echo "SCRAM_ARCH is : " ${SCRAM_ARCH}
@@ -33,18 +33,18 @@ echo "copying job to WORKER AREA (LOCAL)"
 
 ##Create python structure
 scramv1 project CMSSW ${CMSSWRELEASE}
-cd ${CMSSWRELEASE}/src
+cd ${CMSSW_BASE}/src
+eval `scramv1 runtime -sh`
 mkdir -p Configuration/users/python
 
 #Copy hadronizer
 cp -a ${DIR}/${HADRONIZERTMPL} .
-sed s/XX_QCUT_XX/INPUT5/g ${HADRONIZERTMPL} > tmpl
+sed s/XX_QCUT_XX/INPUT2/g ${HADRONIZERTMPL} > tmpl
 mv tmpl Configuration/users/python/${HADRONIZER}
-cat  Configuration/users/python/${HADRONIZER}
+cat Configuration/users/python/${HADRONIZER}
 rm ${HADRONIZERTMPL}
 
 #MKAE SURE CMSDRIVER SEE THE HADRONIZER
-eval `scramv1 runtime -sh`
 scramv1 build
 cd Configuration/users/python
 scramv1 build

@@ -7,10 +7,10 @@ Scan () {
     echo "SCAN Qcut on one sample: $file"
     XQCUT=`(grep "minimum kt jet measure between partons" ${LHEDIR}/$file)`
     echo LHE:: Xqcut value assigned = ${XQCUT}
-    for qcut in $(seq 20 5 30) #scanning from 20 to 120 GeV in step of 5 #120 
+    for qcut in $(seq 20 5 110) #scanning from 20 to 120 GeV in step of 5 #120 
     do
 	echo "./makejob.sh ${model} ${qcut} ${queue}"  
-        #./makejob.sh ${model} ${qcut} ${queue}
+        ./makejob.sh ${model} ${qcut} ${queue}
     done
 }
 
