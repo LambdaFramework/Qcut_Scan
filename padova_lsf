@@ -33,7 +33,9 @@ echo "copying job to WORKER AREA (LOCAL)"
 
 ##Create python structure
 scramv1 project CMSSW ${CMSSWRELEASE}
-cd ${CMSSW_BASE}/src
+cd ${CMSSWRELEASE}/src
+export BASE=`pwd`
+
 eval `scramv1 runtime -sh`
 mkdir -p Configuration/users/python
 
@@ -48,7 +50,7 @@ rm ${HADRONIZERTMPL}
 scramv1 build
 cd Configuration/users/python
 scramv1 build
-cd ${CMSSW_BASE}/src
+cd ${BASE}
 scramv1 build
 
 #copy nessecary files
