@@ -11,10 +11,10 @@ export SCRAM_ARCH=slc6_amd64_gcc493
 export CMSSWRELEASE=CMSSW_7_6_0
 export LHEfile=${DIR}/LHE/INPUT1_M125_LO_MLM_13TeV.lhe
 export CODE_SRC=${DIR}/work #CURRENT DIRECTORY
-export ROOTFILE=${CODE_SRC}/Qcut_INPUT2/results #OUTPUT LOCATION
+export ROOTFILE=${CODE_SRC}/INPUT1/Qcut_INPUT2/results #OUTPUT LOCATION
 export HADRONIZERTMPL=Hadronizer_TuneCUETP8M1_13TeV_MLM_5f_max2j_qCutXX_LHE_pythia8_cff.py-template
 export HADRONIZER=(`echo ${HADRONIZERTMPL} | awk -F "-" '{print $1}'`)
-export nevent=1000
+export nevent=10000
 
 echo "- - - - - PATH SETTING- - - - -"
 echo "SCRAM_ARCH is : " ${SCRAM_ARCH}
@@ -23,8 +23,8 @@ echo "Disk space on this batch machine:"
 #df -h
 
 ##Create Qcut folder
-mkdir -p ${CODE_SRC}/Qcut_INPUT2
-cd ${CODE_SRC}/Qcut_INPUT2
+mkdir -p ${CODE_SRC}/INPUT1/Qcut_INPUT2
+cd ${CODE_SRC}/INPUT1/Qcut_INPUT2
 
 echo
 env > local.env
@@ -34,7 +34,6 @@ echo "copying job to WORKER AREA (LOCAL)"
 ##Create python structure
 scramv1 project CMSSW ${CMSSWRELEASE}
 cd ${CMSSWRELEASE}/src
-export BASE=`pwd`
 
 eval `scramv1 runtime -sh`
 mkdir -p Configuration/users/python
@@ -50,8 +49,11 @@ rm ${HADRONIZERTMPL}
 scramv1 build
 cd Configuration/users/python
 scramv1 build
-cd ${BASE}
+cd ${CODE_SRC}/INPUT1/Qcut_INPUT2/${CMSSWRELEASE}/src
 scramv1 build
+echo "SHOULD BE AT CMSSWBASE:"
+pwd
+echo "RIGHT???? --> "
 
 #copy nessecary files
 echo "copying LHE file"
@@ -84,12 +86,14 @@ EOF
 echo "Copying files.."
 mkdir -p ${ROOTFILE}
 cp run.log ${ROOTFILE}/Log_INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.log
-cp INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root ${ROOTFILE}/
+#cp INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root ${ROOTFILE}/
+rm INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root
 cp DJR_PLOT_INPUT1_M125_LO_MLM_13TeV_Qcut_INPUT2_pythia8.root ${ROOTFILE}/
 
 ##PURGE
-cd ${CODE_SRC}/Qcut_INPUT2
-#rm -rf CMSSW*
+echo "PURGE CMSSW"
+cd ${CODE_SRC}/INPUT1/Qcut_INPUT2/
+rm -rf ${CMSSWRELEASE}
 
 echo ""
 echo "Job end `date`"
